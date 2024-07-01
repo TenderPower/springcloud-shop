@@ -1,0 +1,20 @@
+#构造一下配置文件
+server:
+  port: 9001
+
+spring:
+  application:
+#    项目的名称（微项目的名称
+    name: xdclass-user-service
+
+  #数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/xdclass_user?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: abc123456
+#    redis配置
+  redis:
+    host: 192.168.31.99
+    port: 8000
+    password: 123456
