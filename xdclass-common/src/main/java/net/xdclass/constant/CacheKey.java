@@ -6,4 +6,9 @@ public class CacheKey {
      * 注册验证码， 第一个是接收的类型（邮箱还是手机号），第二个是接收号码
      */
     public static final String  CHECK_CODE_KEY = "code:%s:%s";
+
+    /**
+     * 购物车 在redis中Hash的key
+     */
+    public static final String  CART_KEY = "cart:%s";
 }
