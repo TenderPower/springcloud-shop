@@ -3,6 +3,8 @@ package net.xdclass;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 //构造一个启动类
@@ -12,6 +14,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @MapperScan("net.xdclass.mapper")
 //本地事务配置步骤1--**启动类增加注解 @EnableTransactionManagement**
 @EnableTransactionManagement
+//引入Nacos注册中心和Feign依赖
+@EnableFeignClients
+@EnableDiscoveryClient
 public class CouponApplication {
     public static void main(String[] args) {
 

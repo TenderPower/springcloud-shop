@@ -4,6 +4,7 @@ package net.xdclass.controller;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import net.xdclass.enums.BizCodeEnum;
+import net.xdclass.request.LockCouponRecordRequest;
 import net.xdclass.service.CouponRecordService;
 import net.xdclass.util.JsonData;
 import net.xdclass.vo.CouponRecordVO;
@@ -44,6 +45,11 @@ public class CouponRecordController {
         CouponRecordVO couponRecordVO = couponRecordService.findeById(recordId);
         return couponRecordVO==null ? JsonData.buildResult(BizCodeEnum.COUPON_NO_EXITS)
                 : JsonData.buildSuccess(couponRecordVO);
+    }
+
+    public JsonData lockCouponRecord(@ApiParam(value = "锁定优惠券请求对象") @RequestBody LockCouponRecordRequest recordRequest) {
+        JsonData jsonData = couponRecordService.lockCouponRecords(recordRequest);
+        return jsonData;
     }
 
 }

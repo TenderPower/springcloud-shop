@@ -28,7 +28,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <spring.boot.version>2.3.3.RELEASE</spring.boot.version>
         <spring.cloud.version>Hoxton.SR8</spring.cloud.version>
-        <alibaba.cloud.version>2.2.1.RELEASE</alibaba.cloud.version>
+        <alibaba.cloud.version>2.2.6.RELEASE</alibaba.cloud.version>
 <!--        <mybatisplus.boot.starter.version>3.4.1</mybatisplus.boot.starter.version>-->
         <mybatisplus.boot.starter.version>3.5.0</mybatisplus.boot.starter.version>
         <lombok.version>1.18.16</lombok.version>

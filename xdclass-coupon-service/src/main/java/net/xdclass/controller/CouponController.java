@@ -46,7 +46,7 @@ public class CouponController {
     }
 
     @ApiOperation("RPC-直接通过微服务之间调用进行通信-新用户领取新人优惠券")
-    @GetMapping("new_user_coupon")
+    @PostMapping("new_user_coupon")
     public JsonData addNewUserCoupon(@ApiParam(value = "新用户对象") @RequestBody NewUserRequest newUserRequest){
         return couponService.initNewUserCoupon(newUserRequest);
     }

@@ -22,7 +22,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
 //        绑定自定义的拦截器
         registry.addInterceptor(loginInterceptor())
 //                拦截要拦截的路径
-                .addPathPatterns("/api/cart/*/**")
+                .addPathPatterns("/api/cart/*/**","/api/product/*/lock_porducts")
 //                 排除 不拦截的路径
                 .excludePathPatterns("");
     }

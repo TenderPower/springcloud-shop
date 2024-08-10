@@ -4,11 +4,19 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
+import net.xdclass.enums.BizCodeEnum;
 import net.xdclass.enums.CouponCategoryEnum;
 import net.xdclass.enums.CouponPublishEnum;
+import net.xdclass.enums.StockTaskStateEnum;
+import net.xdclass.exception.BizException;
 import net.xdclass.mapper.ProductMapper;
+import net.xdclass.mapper.ProductTaskMapper;
 import net.xdclass.model.ProductDO;
+import net.xdclass.model.ProductTaskDO;
+import net.xdclass.request.LockProductRequest;
+import net.xdclass.request.OrderItemRequest;
 import net.xdclass.service.ProductService;
+import net.xdclass.util.JsonData;
 import net.xdclass.vo.ProductVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +33,8 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
     @Autowired
     private ProductMapper productMapper;
+    @Autowired
+    private ProductTaskMapper productTaskMapper;
 
     /**
      * 商品首页分页列表接口
@@ -73,6 +84,56 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductVO> findDetailByIds(List<Long> productIdList) {
         List<ProductDO> productDOList =productMapper.selectList(new QueryWrapper<ProductDO>().in("id", productIdList));
         return productDOList.stream().map(obj -> beanProcess(obj)).collect(Collectors.toList());
+    }
+
+    /**
+     * 锁定商品库存
+     * 1）遍历提交订单中的所有商品，锁定每个商品的数量
+     * 2）每一次锁定，都要发送延迟消息
+     * @param lockProductRequest
+     * @return
+     */
+    @Override
+    public JsonData lockProductStock(LockProductRequest lockProductRequest) {
+        String outTradeNo = lockProductRequest.getOrderOutTradeNo();
+        List<OrderItemRequest> itemList = lockProductRequest.getOrderItemList();
+
+//        一行代码， 搞定提取对象中id并加入到集合里面
+//        使用lamda表达式
+        List<Long> productIdList = itemList.stream().map(OrderItemRequest::getProductId).collect(Collectors.toList());
+        List<ProductVO> productVOList = this.findDetailByIds(productIdList);
+        /**
+         * 使用Collectors.toMap()方法指定收集方式，传入两个函数式接口作为参数：
+         * ProductVO::getId作为key的映射函数，用于从ProductVO对象中提取ID作为键。
+         * Function.identity()作为value的映射函数，直接返回流中的每个元素本身作为值。
+         */
+//        最终得到一个Map<Long, ProductVO>，其中键为ProductVO对象的ID，值为对应的ProductVO对象。
+        Map<Long, ProductVO> maps = productVOList.stream().collect(Collectors.toMap(ProductVO::getId, Function.identity()));
+
+        for (OrderItemRequest item : itemList) {
+//            锁定商品记录
+            int row = productMapper.lockProductStock(item.getProductId(), item.getBuyNum());
+            if (row != 1) {
+                throw new BizException(BizCodeEnum.ORDER_CONFIRM_LOCK_PRODUCT_FAIL);
+            }else {
+//                插入商品product_task
+                ProductVO productVO = maps.get(item.getProductId());
+                ProductTaskDO productTaskDO = new ProductTaskDO();
+                productTaskDO.setBuyNum(item.getBuyNum());
+                productTaskDO.setLockState(StockTaskStateEnum.LOCK.name());
+                productTaskDO.setProductId(item.getProductId());
+                productTaskDO.setProductName(productVO.getTitle());
+                productTaskDO.setOutTradeNo(outTradeNo);
+                productTaskMapper.insert(productTaskDO);
+//                发送MQ延迟消息，介绍商品库存 TODO
+
+            }
+        }
+
+
+
+
+        return JsonData.buildSuccess();
     }
 
     /**

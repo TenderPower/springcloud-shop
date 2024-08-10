@@ -1,13 +1,16 @@
 package net.xdclass.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+//import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import net.xdclass.enums.BizCodeEnum;
 import net.xdclass.enums.SendCodeEnum;
+import net.xdclass.feign.CouponFeignService;
 import net.xdclass.interceptor.LoginInterceptor;
 import net.xdclass.mapper.UserMapper;
 import net.xdclass.model.LoginUser;
 import net.xdclass.model.UserDO;
+import net.xdclass.request.NewUserRequest;
 import net.xdclass.request.UserLoginRequest;
 import net.xdclass.request.UserRegisterRequest;
 import net.xdclass.service.NotifyService;
@@ -37,6 +40,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private CouponFeignService couponFeignService;
+
     /**
      * 用户注册
      * <p>
@@ -50,6 +56,8 @@ public class UserServiceImpl implements UserService {
      * @return
      */
     @Override
+//    TM入口service的方法增加 @GlobalTransactional 注解（使用的是Seata）
+//    @GlobalTransactional
     public JsonData register(UserRegisterRequest userRegisterRequest) {
 
         boolean checkCode = false;
@@ -87,6 +95,8 @@ public class UserServiceImpl implements UserService {
 
             //        用户初始化成功后，发放福利 TODO
             userRegisterInitTask(userDO);
+            //        模拟异常
+//            int b = 1 / 0;
             return JsonData.buildSuccess();
         } else {
             return JsonData.buildResult(BizCodeEnum.ACCOUNT_REPEAT);
@@ -166,10 +176,21 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 用户注册，初始化福利信息 TODO
-     *
+     * 利用用户微服务的Feign接口调用优惠券微服务
+     * 实现了微服务之间的通信
      * @param userDO
      */
     private void userRegisterInitTask(UserDO userDO) {
-
+        NewUserRequest newUserRequest = new NewUserRequest();
+        newUserRequest.setName(userDO.getName());
+        newUserRequest.setUserId(userDO.getId());
+        JsonData jsonData = couponFeignService.addNewUserCoupon(newUserRequest);
+//        服务A调用服务B， 服务B发生异常，由于全局异常处理的存在（@ControllerAdvice）, seata 无法拦截到B服务的异常， 而是收到正常的Json返回值
+//        从而导致分布式事务未生效
+//        程序代码各自判断RPC响应码是否正常，再抛出异常
+        if (jsonData.getCode() != 0) {
+            throw new RuntimeException("发放新用户注册优惠券失败");
+        }
+        log.info("发放新用户注册优惠券:{}， 结果：{}", newUserRequest.toString(), jsonData.toString());
     }
 }

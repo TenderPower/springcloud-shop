@@ -4,11 +4,13 @@ package net.xdclass.controller;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import net.xdclass.request.LockProductRequest;
 import net.xdclass.service.ProductService;
 import net.xdclass.util.JsonData;
 import net.xdclass.vo.ProductVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.spring.web.json.Json;
 
 import java.util.Map;
 
@@ -46,5 +48,13 @@ public class ProductController {
         ProductVO productVO = productService.findDetailById(productId);
         return JsonData.buildSuccess(productVO);
     }
+
+    @ApiOperation("商品库存锁定")
+    @PostMapping("lock_products")
+    public JsonData lockProducts(@ApiParam("商品库存锁定") @RequestBody LockProductRequest lockProductRequest){
+        JsonData jsonData = productService.lockProductStock(lockProductRequest);
+        return jsonData;
+    }
+
 }
 
