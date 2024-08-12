@@ -14,7 +14,7 @@ public class ConfirmOrderRequest {
      * 注意：如果传空或者小于0， 则不用优惠券
      */
     @JsonProperty("coupon_record_id")
-    private long couponRecordId;
+    private Long couponRecordId;
     /**
      * 最终的购物车中的商品列表
      * 传递id，购买数量从购物车中读取

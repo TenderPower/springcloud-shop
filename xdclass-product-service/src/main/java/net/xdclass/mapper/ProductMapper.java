@@ -20,4 +20,11 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
      * @param buyNum
      */
     int lockProductStock(@Param("productId") long productId,@Param("buyNum") int buyNum);
+
+    /**
+     * 解锁对应商品的库存
+     * @param productId
+     * @param buyNum
+     */
+    void unlockProductStock(@Param("productId") Long productId,@Param("buyNum") Integer buyNum);
 }

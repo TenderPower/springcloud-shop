@@ -52,7 +52,7 @@ public class ProductOrderController {
     @ApiOperation("确认订单")
     @PostMapping("confirm")
     public void confirmOrder(@ApiParam("订单对象") @RequestBody ConfirmOrderRequest confirmOrderRequest, HttpServletResponse response) {
-        JsonData jsonData = productOrderService.confirmOrder(confirmOrderRequest, response);
+        JsonData jsonData = productOrderService.confirmOrder(confirmOrderRequest);
 
         if (jsonData.getCode()==0) {
 //            判断移动端 和 支付方式

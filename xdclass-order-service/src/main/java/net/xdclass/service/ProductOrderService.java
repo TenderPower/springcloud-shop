@@ -20,9 +20,8 @@ public interface ProductOrderService {
     /**
      * 确认订单
      * @param confirmOrderRequest
-     * @param response
      */
-    JsonData confirmOrder(ConfirmOrderRequest confirmOrderRequest, HttpServletResponse response);
+    JsonData confirmOrder(ConfirmOrderRequest confirmOrderRequest);
 
     /**
      * 查询订单状态

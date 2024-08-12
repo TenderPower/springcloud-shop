@@ -9,6 +9,7 @@ import net.xdclass.model.LoginUser;
 import net.xdclass.request.CartItemRequest;
 import net.xdclass.service.CartService;
 import net.xdclass.service.ProductService;
+import net.xdclass.util.JsonData;
 import net.xdclass.vo.CartItemVO;
 import net.xdclass.vo.CartVO;
 import net.xdclass.vo.ProductVO;
@@ -78,6 +79,7 @@ public class CartServiceImpl implements CartService {
 
     /**
      * 删除购物车中指定商品
+     *
      * @param productId
      */
     @Override
@@ -88,6 +90,7 @@ public class CartServiceImpl implements CartService {
 
     /**
      * 更新购物车中商品数量
+     *
      * @param cartItemRequest
      */
     @Override
@@ -96,7 +99,7 @@ public class CartServiceImpl implements CartService {
         int buyNum = cartItemRequest.getBuyNum();
 
         BoundHashOperations<String, Object, Object> myCart = getMyCartOps();
-        Object cachedValue  = myCart.get(productId);
+        Object cachedValue = myCart.get(productId);
         if (cachedValue == null) {
             throw new BizException(BizCodeEnum.CART_FAIL);
         }
@@ -107,6 +110,24 @@ public class CartServiceImpl implements CartService {
         myCart.put(productId, JSON.toJSONString(cartItemVO));
 
 
+    }
+
+    @Override
+    public List<CartItemVO> confirmOrderCartItems(List<Long> productIdList) {
+//        获取购物车中所有的商品列表(最新 or  不是最新)
+        List<CartItemVO> cartItemVOList = getCartItems(true);
+        cartItemVOList.stream().filter(cartItemVO -> {
+                    if (productIdList.contains(cartItemVO.getProductId())) {
+//                        既然用户选定购物车中的该商品，下单后，必要从购物车中剔除
+                        this.delCartItem(cartItemVO.getProductId());
+                        return true;
+                    }
+                    return false;
+                }
+        ).collect(Collectors.toList());
+//        collect(toList()) 的作用是通过一个 Stream 对象生成 List 对象
+
+        return cartItemVOList;
     }
 
     /**

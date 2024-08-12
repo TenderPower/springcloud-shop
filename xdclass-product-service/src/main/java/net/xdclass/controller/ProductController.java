@@ -24,7 +24,7 @@ import java.util.Map;
  */
 @Api(tags = "商品模块")
 @RestController
-@RequestMapping("/api/porduct/v1")
+@RequestMapping("/api/product/v1")
 public class ProductController {
     @Autowired
     private ProductService productService;
