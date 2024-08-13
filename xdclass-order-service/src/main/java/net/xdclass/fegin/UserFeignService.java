@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "xdclass-coupon-service")
+@FeignClient(name = "xdclass-user-service")
 public interface UserFeignService {
     /**
      * 查询用户地址

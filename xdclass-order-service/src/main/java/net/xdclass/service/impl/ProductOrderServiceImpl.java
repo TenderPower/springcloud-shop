@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
+import net.xdclass.config.RabbitMQConfig;
 import net.xdclass.enums.*;
 import net.xdclass.exception.BizException;
 import net.xdclass.fegin.CouponFeignService;
@@ -12,6 +13,7 @@ import net.xdclass.fegin.UserFeignService;
 import net.xdclass.interceptor.LoginInterceptor;
 import net.xdclass.mapper.ProductOrderItemMapper;
 import net.xdclass.model.LoginUser;
+import net.xdclass.model.OrderMessage;
 import net.xdclass.model.ProductOrderDO;
 import net.xdclass.mapper.ProductOrderMapper;
 import net.xdclass.model.ProductOrderItemDO;
@@ -26,7 +28,9 @@ import net.xdclass.util.JsonData;
 import net.xdclass.vo.CouponRecordVO;
 import net.xdclass.vo.OrderItemVO;
 import net.xdclass.vo.ProductOrderAddressVO;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.jdbc.Null;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import springfox.documentation.spring.web.json.Json;
@@ -59,6 +63,10 @@ public class ProductOrderServiceImpl implements ProductOrderService {
     private CouponFeignService couponFeignService;
     @Autowired
     private ProductOrderItemMapper productOrderItemMapper;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private RabbitMQConfig rabbitMQConfig;
 
     /**
      * 订单确认
@@ -97,7 +105,11 @@ public class ProductOrderServiceImpl implements ProductOrderService {
         ProductOrderDO productOrderDO = saveProductOrder(orderOutTradeNo, addressVO, loginUser, confirmOrderRequest);
 //        创建该订单对应的商品项
         saveProductOrderItems(orderOutTradeNo, productOrderDO.getId(), orderItemList);
-//        发送延迟消息 TODO
+//        发送延迟消息
+        OrderMessage orderMessage = new OrderMessage();
+        orderMessage.setOutTradeNo(orderOutTradeNo);
+        rabbitTemplate.convertAndSend(rabbitMQConfig.getEventExchange(),rabbitMQConfig.getOrderCloseDelayRoutingKey(),orderMessage);
+
 //        创建支付 TODO
 
 
@@ -337,5 +349,42 @@ public class ProductOrderServiceImpl implements ProductOrderService {
         } else {
             return productOrderDO.getState();
         }
+    }
+
+    /**
+     * 关闭订单(利用MQ延迟消息实现)
+     * @param orderMessage
+     * @return
+     */
+    @Override
+    public boolean closeProductOrder(OrderMessage orderMessage) {
+        ProductOrderDO productOrderDO = productOrderMapper.selectOne(
+                new QueryWrapper<ProductOrderDO>().eq("out_trade_no", orderMessage.getOutTradeNo())
+        );
+        if (productOrderDO == null) {
+//            订单不存在
+            log.warn("直接确认消息，订单不存在：{}",orderMessage);
+            return true;
+        }
+//        订单支付成功
+        if (productOrderDO.getState().equalsIgnoreCase(ProductOrderStateEnum.PAY.name())){
+            log.info("直接确认消息，订单已支付：{}",orderMessage);
+            return true;
+        }
+
+//        向第三方支付查询该订单是否真的未支付 TODO
+        String payResult = "";
+//        结果为空，表示支付失败，回滚，本地取消订单
+        if (StringUtils.isBlank(payResult)) {
+            productOrderMapper.updateOrderPayState(productOrderDO.getOutTradeNo(), ProductOrderStateEnum.CANCEL.name(),ProductOrderStateEnum.NEW.name());
+            log.info("结果为空，未支付成功，本地取消订单");
+            return true;
+        }else {
+//            支付成功， 主动把订单状态改成UI支付，造成该原因的情况可能时支付通道回调有问题
+            log.warn("支付成功， 主动把订单状态改成UI支付，造成该原因的情况可能时支付通道回调有问题");
+            productOrderMapper.updateOrderPayState(productOrderDO.getOutTradeNo(), ProductOrderStateEnum.PAY.name(),ProductOrderStateEnum.NEW.name());
+            return true;
+        }
+
     }
 }

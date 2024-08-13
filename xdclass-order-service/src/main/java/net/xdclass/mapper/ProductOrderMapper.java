@@ -2,6 +2,7 @@ package net.xdclass.mapper;
 
 import net.xdclass.model.ProductOrderDO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
@@ -13,4 +14,11 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface ProductOrderMapper extends BaseMapper<ProductOrderDO> {
 
+    /**
+     * 修改订单支付状态
+     * @param outTradeNo
+     * @param newState
+     * @param oldState
+     */
+    void updateOrderPayState(@Param("out_trade_no") String outTradeNo, @Param("new_state") String newState, @Param("old_state") String oldState);
 }

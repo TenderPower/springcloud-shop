@@ -49,7 +49,6 @@ logging:
 
 
 
-
 # Seata配置
 #seata:
 #  enabled: true
